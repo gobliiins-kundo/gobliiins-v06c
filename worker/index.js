@@ -1,8 +1,8 @@
-// Приём отчётов и телеметрии Gobliiins (страница ekundo.github.io/gobliiins-v06c) в D1.
+// Приём отчётов и телеметрии Gobliiins (страница gobliiins-kundo.github.io/gobliiins-v06c) в D1.
 //   POST /report  {kind, build, sid, ua, detector, text, frames, level, rec: base64 gzip, shot: base64 png}
 //   POST /t       [{type, level, frame, data}, …] + ?sid=&build=
 //   GET  /admin/reports?after=ID, /admin/report/ID, /admin/stats — заголовок Authorization: Bearer <ADMIN>
-const ORIGINS = ['https://ekundo.github.io', 'http://localhost:8765', 'http://127.0.0.1:8765'];
+const ORIGINS = ['https://gobliiins-kundo.github.io', 'http://localhost:8765', 'http://127.0.0.1:8765'];
 const MAXREC = 1500000, MAXSHOT = 300000;
 
 function cors(req) {

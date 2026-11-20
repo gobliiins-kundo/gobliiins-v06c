@@ -1,9 +1,9 @@
 # Gobliiins на Векторе-06Ц
 
 Порт Gobliiins (Coktel Vision, 1991) на советский компьютер Вектор-06Ц, в браузере:
-**https://ekundo.github.io/gobliiins-v06c/**
+**https://gobliiins-kundo.github.io/gobliiins-v06c/**
 
-Pre-alpha. Ошибки — в [issues](https://github.com/ekundo/gobliiins-v06c/issues).
+Pre-alpha. Ошибки — в [issues](https://github.com/gobliiins-kundo/gobliiins-v06c/issues).
 
 ## Что внутри
 
