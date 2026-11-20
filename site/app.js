@@ -97,21 +97,23 @@ function put(bytes) {
 }
 
 // ---- звук: AudioWorklet с кольцом; кадры эмулятора гонит заполнение кольца ----
-let actx = null, node = null, queued = 0, volume = 1, audioAlive = 0;
+let actx = null, node = null, queued = 0, sent = 0, volume = 1, audioAlive = 0;   // sent — отсчётов отдано Worklet, queued = sent - проиграно
 const WORKLET = `
 class Ring extends AudioWorkletProcessor {
-  constructor() { super(); this.q = []; this.o = 0; this.n = 0;
-    this.port.onmessage = (e) => { this.q.push(e.data); this.n += e.data.length / 2; }; }
+  constructor() { super(); this.q = []; this.o = 0; this.played = 0; this.l = 0; this.r = 0; this.starve = 0;
+    this.port.onmessage = (e) => { this.q.push(e.data); }; }
   process(_, out) {
     const L = out[0][0], R = out[0][1]; let i = 0;
     while (i < L.length && this.q.length) {
       const b = this.q[0];
-      while (i < L.length && this.o < b.length) { L[i] = b[this.o++]; R[i] = b[this.o++]; i++; }
+      while (i < L.length && this.o < b.length) { L[i] = this.l = b[this.o++]; R[i] = this.r = b[this.o++]; i++; }
       if (this.o >= b.length) { this.q.shift(); this.o = 0; }
     }
-    this.n -= i;
-    for (; i < L.length; i++) { L[i] = 0; R[i] = 0; }
-    this.port.postMessage(this.n);
+    this.played += i;
+    if (i < L.length) this.starve++;
+    // нехватка: держим последний отсчёт и плавно уводим к нулю — без ступеньки в ноль (на меандрах AY это щелчок)
+    for (; i < L.length; i++) { this.l *= 0.995; this.r *= 0.995; L[i] = this.l; R[i] = this.r; }
+    this.port.postMessage([this.played, this.starve]);
     return true;
   }
 }
@@ -123,7 +125,7 @@ async function startAudio() {
   const url = URL.createObjectURL(new Blob([WORKLET], { type: 'application/javascript' }));
   await actx.audioWorklet.addModule(url);
   node = new AudioWorkletNode(actx, 'ring', { outputChannelCount: [2] });
-  node.port.onmessage = (e) => { queued = e.data; audioAlive = performance.now(); };
+  node.port.onmessage = (e) => { queued = sent - e.data[0]; starve = e.data[1]; audioAlive = performance.now(); pump(); };
   const g = actx.createGain(); g.gain.value = volume; node.connect(g).connect(actx.destination);
   node._gain = g;
   say('');
@@ -139,31 +141,37 @@ function frame() {
   const a = M._v_audio(PER_FRAME) >> 2;
   if (node && actx.state === 'running') {
     node.port.postMessage(M.HEAPF32.slice(a, a + PER_FRAME * 2));
-    queued += PER_FRAME;
+    queued += PER_FRAME; sent += PER_FRAME;
   }
 }
 
-let last = 0, acc = 0, perfF = 0, perfT = 0, starve = 0;
+let last = 0, acc = 0, perfF = 0, perfT = 0, starve = 0, starve0 = 0, drawn = 0;
+// звук включён — кадры гонит он: каждые ~2,7 мс Worklet сообщает запас, держим 4-6 кадров (80-120 мс)
+const LOW = PER_FRAME * 4, HIGH = PER_FRAME * 6;
+function pump() {
+  if (!running || paused) return;
+  let n = 0;
+  if (queued < LOW) while (queued < HIGH && n < 4) { frame(); n++; }
+}
 setInterval(() => {
   if (!running || paused) return;
   const now = performance.now();
-  if (perfT) tel('perf', { fps: Math.round((frames - perfF) * 10000 / (now - perfT)) / 10, starve, audio: actx ? actx.state : 'off', hidden: document.hidden });
-  perfF = frames; perfT = now; starve = 0;
+  if (perfT) tel('perf', { fps: Math.round((frames - perfF) * 10000 / (now - perfT)) / 10, starve: starve - starve0, audio: actx ? actx.state : 'off', hidden: document.hidden });
+  perfF = frames; perfT = now; starve0 = starve;
 }, 60000);
 function loop(t) {
   requestAnimationFrame(loop);
   if (!running || paused) { last = t; return; }
   let n = 0;
-  // темп — по часам страницы (кадр 20 мс); звук подтягивает: мало в кольце — кадр лишний, много — пропуск
-  acc += Math.min(200, t - (last || t));
   const audioOn = node && actx.state === 'running' && audioAlive > performance.now() - 500;
-  if (audioOn && queued > PER_FRAME * 6) acc -= 2;
-  if (audioOn && queued < PER_FRAME * 2) acc += 2;
-  if (audioOn && queued < PER_FRAME / 2) starve++;
-  while (acc >= 20 && n < 6) { frame(); acc -= 20; n++; }
-  if (acc > 100) acc = 0;
+  if (!audioOn) {   // без звука — по часам страницы, кадр 20 мс
+    acc += Math.min(200, t - (last || t));
+    while (acc >= 20 && n < 6) { frame(); acc -= 20; n++; }
+    if (acc > 100) acc = 0;
+  }
   last = t;
-  if (n) {
+  if (frames !== drawn) {
+    drawn = frames;
     ctx.putImageData(img, 0, 0);
     $('ruslat').classList.toggle('on', !!M._v_ruslat());
     screen.classList.toggle('mouse', !!M._v_mouse_enabled());
@@ -280,5 +288,5 @@ for (const a of document.querySelectorAll('a.issue')) a.href += '?body=' + encod
 addEventListener('error', (e) => hit('js-error', { msg: String(e.message).slice(0, 300) }));
 boot().then(() => tel('start', { w: innerWidth, h: innerHeight })).catch((e) => { say('Ошибка: ' + e.message); console.error(e); tel('boot-fail', { msg: e.message }); flush(false); });
 window.gobRec = rec;
-window.gobDebug = () => ({ events: rec.events.length, frames, queued, audioAlive, audio: actx && actx.state, running, paused });
+window.gobDebug = () => ({ sent, starve, events: rec.events.length, frames, queued, audioAlive, audio: actx && actx.state, running, paused });
 window.gobStep = (n) => { for (let i = 0; i < n; i++) frame(); ctx.putImageData(img, 0, 0); return frames; };   // отладка: кадры без часов страницы
