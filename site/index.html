@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru" data-build="dev">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gobliiins на Векторе-06Ц</title>
+<meta name="description" content="Порт Gobliiins (Coktel Vision, 1991) на Вектор-06Ц. Играть в браузере.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=PT+Mono&display=swap">
+<style>
+/* один мир: корпус Вектора-06Ц — бежевый пластик, тёмные клавиши, люминофор телевизора */
+:root {
+  --room: #16130f; --plastic: #d8cfbb; --plastic-dark: #b9ae96; --key: #2a2623; --key-top: #3a3531;
+  --key-ink: #efe8d6; --red-key: #9e2f22; --text: #e6dcc4; --dim: #9d9481; --amber: #f0b23e;
+}
+* { box-sizing: border-box; }
+html { background: var(--room); }
+body { margin: 0; color: var(--text); background: var(--room); font: 16px/1.55 "PT Mono", ui-monospace, monospace; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 28px 16px 48px; }
+h1 { font: 22px/1.4 "Press Start 2P", monospace; margin: 0 0 4px; color: var(--amber); letter-spacing: 1px; }
+.sub { color: var(--dim); margin: 0 0 22px; }
+.case { background: linear-gradient(var(--plastic), var(--plastic-dark)); border-radius: 10px; padding: 18px 18px 14px;
+  box-shadow: 0 1px 0 #fff4 inset, 0 12px 30px #000a; }
+.tv { background: #000; border-radius: 4px; box-shadow: 0 0 0 3px #4a4438, 0 0 0 5px #8d846f; display: flex; justify-content: center; }
+.tv:fullscreen { align-items: center; box-shadow: none; }
+canvas { width: 100%; aspect-ratio: 4 / 3; image-rendering: pixelated; display: block; outline: none; }
+.tv:fullscreen canvas { width: auto; height: 100vh; }
+canvas.mouse { cursor: none; }
+.keys { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+.keys button { font: 10px "Press Start 2P", monospace; color: var(--key-ink); background: linear-gradient(var(--key-top), var(--key));
+  border: 0; border-radius: 4px; padding: 10px 12px 9px; box-shadow: 0 3px 0 #000, 0 0 0 1px #000; cursor: pointer; }
+.keys button:active { transform: translateY(2px); box-shadow: 0 1px 0 #000, 0 0 0 1px #000; }
+.keys button.red { background: linear-gradient(#b8402f, var(--red-key)); }
+.keys button:focus-visible, canvas:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+.vol { display: flex; align-items: center; gap: 8px; color: #3b352c; font: 10px "Press Start 2P", monospace; }
+.vol input { accent-color: #3b352c; width: 110px; }
+.lamp { display: flex; align-items: center; gap: 6px; color: #3b352c; font: 10px "Press Start 2P", monospace; margin-left: auto; }
+.lamp i { width: 10px; height: 10px; border-radius: 50%; background: #5a2a22; box-shadow: inset 0 1px 2px #000; }
+.lamp.on i { background: #ff4a2e; box-shadow: 0 0 8px #ff4a2e; }
+#status { margin: 14px 0 0; color: var(--dim); min-height: 1.5em; }
+.text { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 30px; }
+@media (max-width: 720px) { .text { grid-template-columns: 1fr; } .lamp { margin-left: 0; } }
+h2 { font: 12px/1.6 "Press Start 2P", monospace; color: var(--amber); margin: 0 0 12px; }
+p { margin: 0 0 10px; max-width: 62ch; }
+dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; }
+dt { color: var(--amber); }
+dd { margin: 0; }
+a { color: var(--text); text-decoration-color: var(--amber); text-underline-offset: 3px; }
+a:hover { color: var(--amber); }
+footer { margin-top: 36px; color: var(--dim); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>GOBLIIINS</h1>
+  <p class="sub">на Векторе-06Ц. Pre-alpha: играть можно, ошибки будут.</p>
+
+  <div class="case">
+    <div class="tv"><canvas id="screen" tabindex="0" width="576" height="288"></canvas></div>
+    <div class="keys">
+      <button id="pause">ПАУЗА</button>
+      <button id="reset" class="red">СБР</button>
+      <button id="full">ЭКРАН</button>
+      <button id="shot">СНИМОК</button>
+      <label class="vol">ГРОМК <input id="vol" type="range" min="0" max="200" value="100"></label>
+      <span class="lamp" id="ruslat"><i></i>РУС</span>
+    </div>
+  </div>
+  <p id="status">…</p>
+
+  <div class="text">
+    <div>
+      <h2>Как играть</h2>
+      <dl>
+        <dt>мышь</dt><dd>как в оригинале</dd>
+        <dt>Esc</dt><dd>АР2, пропустить заставку</dd>
+        <dt>Cmd/Win</dt><dd>РУС/ЛАТ</dd>
+        <dt>- = ; +</dt><dd>громкость музыки</dd>
+      </dl>
+      <p style="margin-top:14px">Звук включится после первого щелчка по экрану.</p>
+    </div>
+    <div>
+      <h2>Нашли ошибку</h2>
+      <p>Напишите, где в игре, что делали и что увидели. Снимок экрана — кнопка СНИМОК.</p>
+      <p><a class="issue" href="https://github.com/ekundo/gobliiins-v06c/issues/new">Issue на GitHub</a> (версия сборки подставится сама) или в Telegram-группе, где была ссылка.</p>
+    </div>
+  </div>
+
+  <footer>
+    Эмулятор <a href="https://github.com/svofski/vector06sdl">v06x</a> Вячеслава Славинского, собранный в WebAssembly,
+    с винчестером, PCM ComboLite и мышью. МикроДОС T-72. Gobliiins © Coktel Vision, 1991. Сборка <span id="build"></span>.
+  </footer>
+</div>
+<script src="v06x.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
