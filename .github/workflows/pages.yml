@@ -19,7 +19,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: build stamp
-        run: sed -i "s/data-build=\"dev\"/data-build=\"$(git rev-parse --short HEAD)\"/" site/index.html
+        run: |
+          H=$(git rev-parse --short HEAD)
+          sed -i "s/data-build=\"dev\"/data-build=\"$H\"/; s/src=\"v06x.js\"/src=\"v06x.js?v=$H\"/; s/src=\"app.js\"/src=\"app.js?v=$H\"/" site/index.html
+          sed -i "s#from './keys.js'#from './keys.js?v=$H'#" site/app.js
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
