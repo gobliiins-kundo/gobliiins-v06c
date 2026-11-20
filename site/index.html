@@ -48,6 +48,11 @@ dt { color: var(--amber); }
 dd { margin: 0; }
 a { color: var(--text); text-decoration-color: var(--amber); text-underline-offset: 3px; }
 a:hover { color: var(--amber); }
+#bugform { margin-top: 12px; }
+#bugform textarea { width: 100%; font: 15px "PT Mono", monospace; background: #0d0b09; color: var(--text); border: 1px solid #4a4438; border-radius: 4px; padding: 8px; }
+#bugform .keys { margin-top: 8px; }
+#bugstatus { color: var(--dim); }
+.opt { display: flex; gap: 8px; align-items: flex-start; color: var(--dim); }
 footer { margin-top: 36px; color: var(--dim); font-size: 14px; }
 </style>
 </head>
@@ -65,10 +70,16 @@ footer { margin-top: 36px; color: var(--dim); font-size: 14px; }
       <button id="full">ЭКРАН</button>
       <button id="shot">СНИМОК</button>
       <label class="vol">ГРОМК <input id="vol" type="range" min="0" max="200" value="100"></label>
+      <button id="bug" class="red" title="Сообщить об ошибке: уйдут описание, снимок и запись игры">ОШИБКА</button>
       <span class="lamp" id="ruslat"><i></i>РУС</span>
     </div>
   </div>
   <p id="status">…</p>
+  <div id="bugform" hidden>
+    <p>Что пошло не так? Где в игре, что делали. Вместе с текстом уйдут снимок экрана и запись игры: по ней мы повторим всё кадр в кадр.</p>
+    <textarea id="bugtext" rows="4" maxlength="4000"></textarea>
+    <div class="keys"><button id="bugsend" class="red">ОТПРАВИТЬ</button><button id="bugcancel">ОТМЕНА</button><span id="bugstatus"></span></div>
+  </div>
 
   <div class="text">
     <div>
@@ -84,6 +95,8 @@ footer { margin-top: 36px; color: var(--dim); font-size: 14px; }
     <div>
       <h2>Нашли ошибку</h2>
       <p>Напишите, где в игре, что делали и что увидели. Снимок экрана — кнопка СНИМОК.</p>
+      <p>К сообщению приложите <a href="#" id="recdl">запись игры</a>: по ней сессия воспроизводится у нас кадр в кадр.</p>
+      <p><label class="opt"><input type="checkbox" id="telemetry"> отправлять отладочные данные: сбои, которые ловит эмулятор, и скорость работы. Анонимно, без IP и имён.</label></p>
       <p><a class="issue" href="https://github.com/ekundo/gobliiins-v06c/issues/new">Issue на GitHub</a> (версия сборки подставится сама) или в Telegram-группе, где была ссылка.</p>
     </div>
   </div>

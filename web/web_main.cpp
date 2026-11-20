@@ -18,6 +18,7 @@
 #include "wav.h"
 #include "util.h"
 #include "debug.h"
+#include "i8080.h"
 
 Memory memory;
 FD1793 fdc;
@@ -121,6 +122,12 @@ EMSCRIPTEN_KEEPALIVE void v_mouse(int x, int y, int buttons, int wheel, int insi
     if (inside) io.mouse.host_move(x, y);
 }
 EMSCRIPTEN_KEEPALIVE int v_mouse_enabled() { return io.mouse.is_enabled() ? 1 : 0; }
+// для детекторов: регистры на конце кадра и чтение основного ОЗУ
+EMSCRIPTEN_KEEPALIVE int v_pc() { return i8080cpu::i8080_pc(); }
+EMSCRIPTEN_KEEPALIVE int v_sp() { return i8080cpu::i8080_regs_sp(); }
+EMSCRIPTEN_KEEPALIVE int v_iff() { return i8080cpu::i8080_iff() ? 1 : 0; }
+EMSCRIPTEN_KEEPALIVE int v_peek(int addr) { return memory.read(addr & 0xffff, false); }
+EMSCRIPTEN_KEEPALIVE int v_frame_no() { return board.get_frame_no(); }
 EMSCRIPTEN_KEEPALIVE int v_ruslat() { return ruslat ? 1 : 0; }
 
 EMSCRIPTEN_KEEPALIVE void v_volumes(float timer, float beeper, float ayv, float pcm, float master)

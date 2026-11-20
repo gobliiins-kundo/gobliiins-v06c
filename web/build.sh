@@ -32,4 +32,9 @@ em++ -O3 "${OBJS[@]}" -o $OUT/v06x.js \
   -sMODULARIZE=1 -sEXPORT_NAME=V06X -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=64MB \
   -sEXPORTED_RUNTIME_METHODS=FS,HEAPU8,HEAPF32,ccall,cwrap \
   -sEXPORTED_FUNCTIONS=_malloc,_free -sENVIRONMENT=web -sFILESYSTEM=1
-ls -la $OUT/v06x.js $OUT/v06x.wasm
+# то же ядро под Node: проигрыватель записей tools/replay.cjs
+em++ -O3 "${OBJS[@]}" -o build/v06x-node.js \
+  -sMODULARIZE=1 -sEXPORT_NAME=V06X -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=64MB \
+  -sEXPORTED_RUNTIME_METHODS=FS,HEAPU8,HEAPF32,ccall,cwrap \
+  -sEXPORTED_FUNCTIONS=_malloc,_free -sENVIRONMENT=node -sFILESYSTEM=1
+ls -la $OUT/v06x.js $OUT/v06x.wasm build/v06x-node.js
