@@ -25,7 +25,7 @@ function vmouse(x, y, b, w, inside) {
 }
 function vreset(blk) { ev('r', blk); M._v_reset(blk); }
 // ---- отчёты и телеметрия: сервер gob-reports (Cloudflare Worker + D1), анонимно, отключается галочкой ----
-const API = 'https://gob-reports.ekundo.workers.dev';
+const API = 'https://gob-reports.gobliiins.workers.dev';
 const SID = Math.random().toString(36).slice(2, 12);
 const tq = [];
 let sendOK = true;

@@ -1,8 +1,9 @@
 {
   "name": "gob-reports",
   "main": "index.js",
+  "account_id": "80f73c3940979ba87d347dd92f855296",
   "compatibility_date": "2026-11-01",
   "d1_databases": [
-    { "binding": "DB", "database_name": "gob-reports", "database_id": "4301e73b-8e76-41c8-9650-c940ef082e05" }
+    { "binding": "DB", "database_name": "gob-reports", "database_id": "a08bce2e-758f-4dda-a8a4-85fd720e407a" }
   ]
 }
