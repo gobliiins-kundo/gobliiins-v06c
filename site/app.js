@@ -160,7 +160,16 @@ async function boot() {
 }
 
 $('reset').onclick = () => { if (running) { M._v_reset(0); screen.focus(); } };
-$('full').onclick = () => { (screen.parentElement.requestFullscreen || screen.parentElement.webkitRequestFullscreen).call(screen.parentElement); };
+// во весь экран — корпус с клавишами; Esc в Chrome держим за собой (Keyboard Lock), выход — долгое нажатие Esc или кнопка ЭКРАН
+const box = document.querySelector('.case');
+$('full').onclick = async () => {
+  if (document.fullscreenElement || document.webkitFullscreenElement) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+  await (box.requestFullscreen || box.webkitRequestFullscreen).call(box);
+  try { await navigator.keyboard.lock(['Escape']); } catch (e) { /* Safari, Firefox: Esc выходит из полного экрана — есть кнопка АР2 */ }
+  screen.focus();
+};
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) try { navigator.keyboard.unlock(); } catch (e) {} });
+$('ar2').onclick = () => { if (running) { startAudio(); tap('Escape'); screen.focus(); } };
 $('vol').oninput = (e) => { volume = e.target.value / 100; if (node) node._gain.gain.value = volume; };
 $('pause').onclick = (e) => { paused = !paused; e.target.textContent = paused ? 'ДАЛЬШЕ' : 'ПАУЗА'; screen.focus(); };
 $('shot').onclick = () => { const a = document.createElement('a'); a.download = 'gobliiins-' + Date.now() + '.png'; a.href = screen.toDataURL(); a.click(); };

@@ -22,9 +22,10 @@ h1 { font: 22px/1.4 "Press Start 2P", monospace; margin: 0 0 4px; color: var(--a
 .case { background: linear-gradient(var(--plastic), var(--plastic-dark)); border-radius: 10px; padding: 18px 18px 14px;
   box-shadow: 0 1px 0 #fff4 inset, 0 12px 30px #000a; }
 .tv { background: #000; border-radius: 4px; box-shadow: 0 0 0 3px #4a4438, 0 0 0 5px #8d846f; display: flex; justify-content: center; }
-.tv:fullscreen { align-items: center; box-shadow: none; }
+.case:fullscreen { border-radius: 0; display: flex; flex-direction: column; justify-content: center; padding: 12px; }
+.case:fullscreen .tv { flex: 1; min-height: 0; align-items: center; }
 canvas { width: 100%; aspect-ratio: 4 / 3; image-rendering: pixelated; display: block; outline: none; }
-.tv:fullscreen canvas { width: auto; height: 100vh; }
+.case:fullscreen canvas { width: auto; height: 100%; max-width: 100%; }
 canvas.mouse { cursor: none; }
 .keys { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
 .keys button { font: 10px "Press Start 2P", monospace; color: var(--key-ink); background: linear-gradient(var(--key-top), var(--key));
@@ -58,6 +59,7 @@ footer { margin-top: 36px; color: var(--dim); font-size: 14px; }
   <div class="case">
     <div class="tv"><canvas id="screen" tabindex="0" width="576" height="288"></canvas></div>
     <div class="keys">
+      <button id="ar2" title="АР2 (Esc): пропустить заставку">АР2</button>
       <button id="pause">ПАУЗА</button>
       <button id="reset" class="red">СБР</button>
       <button id="full">ЭКРАН</button>
@@ -73,7 +75,7 @@ footer { margin-top: 36px; color: var(--dim); font-size: 14px; }
       <h2>Как играть</h2>
       <dl>
         <dt>мышь</dt><dd>как в оригинале</dd>
-        <dt>Esc</dt><dd>АР2, пропустить заставку</dd>
+        <dt>Esc</dt><dd>АР2, пропустить заставку. Во весь экран Safari и Firefox забирают Esc себе — там кнопка АР2</dd>
         <dt>Cmd/Win</dt><dd>РУС/ЛАТ</dd>
         <dt>- = ; +</dt><dd>громкость музыки</dd>
       </dl>
