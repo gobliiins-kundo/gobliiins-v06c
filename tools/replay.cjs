@@ -17,6 +17,7 @@ function ppm(file, px, W, H) {   // P6 без зависимостей; в PNG: 
 }
 require(path.join(ROOT, 'build/v06x-node.js'))().then((M) => {
   M._v_init();
+  M._v_set_pcm(rec.pcm === false ? 0 : 1);
   const W = M._v_width(), H = M._v_height();
   M.FS.writeFile('/gob.hdd', fs.readFileSync(opt('--hdd', path.join(ROOT, 'site/data/gob.hdd'))));
   if (!M.ccall('v_attach_hdd', 'number', ['string'], ['/gob.hdd'])) throw new Error('hdd');

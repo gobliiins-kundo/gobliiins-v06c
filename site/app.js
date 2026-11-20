@@ -25,6 +25,8 @@ function vmouse(x, y, b, w, inside) {
 }
 function vreset(blk) { ev('r', blk); M._v_reset(blk); }
 // ---- отчёты и телеметрия: сервер gob-reports (Cloudflare Worker + D1), анонимно, отключается галочкой ----
+let pcmOn = true;
+try { pcmOn = localStorage.getItem('gob-pcm') !== 'off'; } catch (e) { /* по умолчанию PCM */ }
 const API = 'https://gob-reports.gobliiins.workers.dev';
 const SID = Math.random().toString(36).slice(2, 12);
 const tq = [];
@@ -213,6 +215,8 @@ async function boot() {
   say('Загрузка эмулятора…');
   M = await V06X({ locateFile: (f) => f + '?v=' + BUILD });
   M._v_init();
+  M._v_set_pcm(pcmOn ? 1 : 0);
+  rec.pcm = pcmOn;
   W = M._v_width(); H = M._v_height(); BORDER = M._v_border();
   screen.width = W; screen.height = H;
   img = ctx.createImageData(W, H); pix = img.data;
@@ -248,6 +252,11 @@ $('vol').oninput = (e) => { volume = e.target.value / 100; if (node) node._gain.
 $('pause').onclick = (e) => { paused = !paused; e.target.textContent = paused ? 'ДАЛЬШЕ' : 'ПАУЗА'; screen.focus(); };
 $('shot').onclick = () => { const a = document.createElement('a'); a.download = 'gobliiins-' + Date.now() + '.png'; a.href = screen.toDataURL(); a.click(); };
 $('build').textContent = BUILD;
+$('pcm').checked = pcmOn;
+$('pcm').onchange = (e) => {   // загрузчик выбирает PCM или AY на старте — перезапуск
+  try { localStorage.setItem('gob-pcm', e.target.checked ? 'on' : 'off'); } catch (x) {}
+  location.reload();
+};
 $('telemetry').checked = sendOK;
 $('telemetry').onchange = (e) => { sendOK = e.target.checked; try { localStorage.setItem('gob-telemetry', sendOK ? 'on' : 'off'); } catch (x) {} };
 $('bug').onclick = () => { paused = true; $('pause').textContent = 'ДАЛЬШЕ'; $('bugform').hidden = false; $('bugtext').focus(); };

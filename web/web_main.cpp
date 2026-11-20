@@ -65,6 +65,14 @@ EMSCRIPTEN_KEEPALIVE int v_init()
     return 0;
 }
 
+// проигрыватель PCM ComboLite выключен: порт 3Ch читается FFh, как без платы, — игра берёт музыку и звуки AY.
+// Звать до запуска игры: решение «PCM или AY» загрузчик принимает на старте
+EMSCRIPTEN_KEEPALIVE void v_set_pcm(int on)
+{
+    io.combo.pcm = on != 0;
+    g_pcm_on = on != 0;
+}
+
 EMSCRIPTEN_KEEPALIVE int v_width() { return Options.screen_width; }
 EMSCRIPTEN_KEEPALIVE int v_height() { return Options.screen_height; }
 EMSCRIPTEN_KEEPALIVE int v_border() { return Options.border_width; }
