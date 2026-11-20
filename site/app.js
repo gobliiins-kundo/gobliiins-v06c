@@ -172,6 +172,9 @@ function loop(t) {
 const held = new Set();
 function key(e, down) {
   if (!running) return;
+  // текст в поле отчёта и прочих полях страницы — им, не эмулятору
+  const t = e.target;
+  if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.isContentEditable)) return;
   const c = KEYMAP[e.code];
   if (c === undefined) return;
   if (e.metaKey && e.code !== 'MetaLeft' && e.code !== 'MetaRight') return;   // Cmd+... — браузеру
