@@ -1,4 +1,4 @@
 [submodule "v06x"]
 	path = v06x
-	url = https://github.com/ekundo/vector06sdl.git
-	branch = patches
+	url = https://github.com/gobliiins-kundo/vector06sdl.git
+	branch = main
