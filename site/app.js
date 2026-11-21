@@ -141,7 +141,7 @@ async function startAudio() {
   const url = URL.createObjectURL(new Blob([WORKLET], { type: 'application/javascript' }));
   await actx.audioWorklet.addModule(url);
   node = new AudioWorkletNode(actx, 'ring', { outputChannelCount: [2] });
-  node.port.onmessage = (e) => { queued = sent - e.data[0]; starve = e.data[1]; audioAlive = performance.now(); pump(); };
+  node.port.onmessage = (e) => { played = e.data[0]; playedAt = performance.now(); queued = sent - e.data[0]; starve = e.data[1]; audioAlive = performance.now(); pump(); };
   const g = actx.createGain(); g.gain.value = volume; node.connect(g).connect(actx.destination);
   node._gain = g;
   say('');
@@ -156,10 +156,31 @@ function frame() {
   detect();
   const a = M._v_audio(PER_FRAME) >> 2;
   if (node && actx.state === 'running') {
+    later(sent);
     node.port.postMessage(M.HEAPF32.slice(a, a + PER_FRAME * 2));
     queued += PER_FRAME; sent += PER_FRAME;
   }
 }
+
+// Кадр — на экран, когда до динамика дойдёт его звук: звук ждёт в очереди Worklet 80-120 мс и ещё в выводе
+// устройства, без этого картинка шла раньше звука (на застолье интро слышно). Слышно сейчас: отсчёт played из Worklet,
+// продлённый по часам страницы, минус задержка вывода. Ввод не задерживается, только показ
+let played = 0, playedAt = 0;
+const vq = [], vpool = [];
+function later(at) {
+  const e = vpool.pop() || { img: ctx.createImageData(W, H) };
+  e.at = at; e.img.data.set(pix); vq.push(e);
+  while (vq.length > 16) show(vq.shift());
+}
+function show(e) { ctx.putImageData(e.img, 0, 0); vpool.push(e); }
+function showDue() {
+  const lat = (actx.outputLatency || 0.02) + (actx.baseLatency || 0);
+  const heard = played + (performance.now() - playedAt) * RATE / 1000 - lat * RATE;
+  let e = null;
+  while (vq.length && vq[0].at <= heard) { if (e) vpool.push(e); e = vq.shift(); }
+  if (e) show(e);
+}
+function flushLater() { while (vq.length) show(vq.shift()); }
 
 let last = 0, acc = 0, perfF = 0, perfT = 0, starve = 0, starve0 = 0, drawn = 0;
 // звук включён — кадры гонит он: каждые ~2,7 мс Worklet сообщает запас, держим 4-6 кадров (80-120 мс)
@@ -186,9 +207,10 @@ function loop(t) {
     if (acc > 100) acc = 0;
   }
   last = t;
+  if (audioOn) showDue(); else if (vq.length) flushLater();
   if (frames !== drawn) {
     drawn = frames;
-    ctx.putImageData(img, 0, 0);
+    if (!audioOn) ctx.putImageData(img, 0, 0);
     $('ruslat').classList.toggle('on', !!M._v_ruslat());
     screen.classList.toggle('mouse', !!M._v_mouse_enabled());
   }
