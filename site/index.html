@@ -24,7 +24,10 @@ h1 { font: 22px/1.4 "Press Start 2P", monospace; margin: 0 0 4px; color: var(--a
 .tv { background: #000; border-radius: 4px; box-shadow: 0 0 0 3px #4a4438, 0 0 0 5px #8d846f; display: flex; justify-content: center; }
 .case:fullscreen { border-radius: 0; display: flex; flex-direction: column; justify-content: center; padding: 12px; }
 .case:fullscreen .tv { flex: 1; min-height: 0; align-items: center; }
-canvas { width: 100%; aspect-ratio: 4 / 3; image-rendering: pixelated; display: block; outline: none; }
+canvas { width: 100%; aspect-ratio: 4 / 3; image-rendering: pixelated; display: block; outline: none; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.case.pseudo-full { position: fixed; inset: 0; z-index: 10; border-radius: 0; display: flex; flex-direction: column; justify-content: center; padding: 8px; }
+.case.pseudo-full .tv { flex: 1; min-height: 0; align-items: center; }
+.case.pseudo-full canvas { width: auto; height: 100%; max-width: 100%; }
 .case:fullscreen canvas { width: auto; height: 100%; max-width: 100%; }
 canvas.mouse { cursor: none; }
 .keys { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
@@ -40,7 +43,7 @@ canvas.mouse { cursor: none; }
 .lamp.on i { background: #ff4a2e; box-shadow: 0 0 8px #ff4a2e; }
 #status { margin: 14px 0 0; color: var(--dim); min-height: 1.5em; }
 .text { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 30px; }
-@media (max-width: 720px) { .text { grid-template-columns: 1fr; } .lamp { margin-left: 0; } }
+@media (max-width: 720px) { .text { grid-template-columns: 1fr; } .lamp { margin-left: 0; } .wrap { padding: 14px 8px 32px; } .case { padding: 8px 8px 10px; border-radius: 6px; } .keys { gap: 8px; } .keys button { padding: 9px 9px 8px; } }
 h2 { font: 12px/1.6 "Press Start 2P", monospace; color: var(--amber); margin: 0 0 12px; }
 p { margin: 0 0 10px; max-width: 62ch; }
 dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; }
@@ -86,6 +89,7 @@ footer { margin-top: 36px; color: var(--dim); font-size: 14px; }
       <h2>Как играть</h2>
       <dl>
         <dt>мышь</dt><dd>как в оригинале</dd>
+        <dt>телефон</dt><dd>тап — щелчок, долгий тап — правая кнопка, вести пальцем — двигать курсор</dd>
         <dt>Esc</dt><dd>АР2, пропустить заставку. Во весь экран Safari и Firefox забирают Esc себе — там кнопка АР2</dd>
         <dt>Cmd/Win</dt><dd>РУС/ЛАТ</dd>
         <dt>- = ; +</dt><dd>громкость музыки</dd>

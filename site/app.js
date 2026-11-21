@@ -198,20 +198,67 @@ window.addEventListener('keyup', (e) => key(e, false));
 window.addEventListener('blur', () => { if (running) for (const c of held) vkey(KEYMAP[c], 0); held.clear(); });
 
 // ---- мышь: координаты холста -> точки Вектора (x 0..511, y 0..255 снизу) ----
-let mb = 0;
+let mb = 0, lastX = 256, lastY = 128;
+function toVector(cx, cy) {
+  const r = screen.getBoundingClientRect();
+  if (!r.width || !r.height) return null;
+  const tx = (cx - r.left) * W / r.width, ty = (cy - r.top) * H / r.height;
+  const x = Math.floor(tx - BORDER), row = Math.floor(ty + (312 - H) - 40);
+  return { x, y: 255 - row, inside: x >= 0 && x < 512 && row >= 0 && row < 256 };
+}
 function mouse(e, wheel = 0) {
   if (!running) return;
-  const r = screen.getBoundingClientRect();
-  const tx = (e.clientX - r.left) * W / r.width, ty = (e.clientY - r.top) * H / r.height;
-  const x = Math.floor(tx - BORDER), row = Math.floor(ty + (312 - H) - 40);
-  const inside = x >= 0 && x < 512 && row >= 0 && row < 256;
-  vmouse(x, 255 - row, mb, wheel, inside ? 1 : 0);
+  const v = toVector(e.clientX, e.clientY);
+  if (!v) return;
+  if (v.inside) { lastX = v.x; lastY = v.y; }
+  vmouse(v.x, v.y, mb, wheel, v.inside ? 1 : 0);
 }
 screen.addEventListener('mousemove', (e) => mouse(e));
 screen.addEventListener('mousedown', (e) => { startAudio(); screen.focus(); mb |= [1, 4, 2][e.button] || 0; mouse(e); e.preventDefault(); });
 window.addEventListener('mouseup', (e) => { mb &= ~([1, 4, 2][e.button] || 0); mouse(e); });
 screen.addEventListener('contextmenu', (e) => e.preventDefault());
 screen.addEventListener('wheel', (e) => { mouse(e, Math.sign(e.deltaY)); e.preventDefault(); }, { passive: false });
+
+// ---- сенсорный экран: тап — курсор в точку и щелчок; долгий тап (0,45 с) — правая кнопка; ведение пальцем —
+// курсор едет за пальцем без щелчка. Курсор ставится на пару кадров раньше нажатия: игра берёт место щелчка из X/Y
+// мыши на своём кадре. Синтетические mouse-события браузера после тача гасим preventDefault
+let touch = null, touchBusy = false;
+async function touchClick(x, y, button) {
+  if (touchBusy) return;
+  touchBusy = true;
+  try {
+    vmouse(x, y, 0, 0, 1); await waitFrames(2);
+    vmouse(x, y, button, 0, 1); await waitFrames(4);
+    vmouse(x, y, 0, 0, 1);
+  } finally { touchBusy = false; }
+}
+screen.addEventListener('touchstart', (e) => {
+  if (!running) return;
+  e.preventDefault(); startAudio();
+  const t = e.changedTouches[0], v = toVector(t.clientX, t.clientY);
+  if (!v || !v.inside) return;
+  touch = { id: t.identifier, x0: t.clientX, y0: t.clientY, v, moved: false, long: false };
+  touch.timer = setTimeout(() => { if (touch && !touch.moved) { touch.long = true; navigator.vibrate && navigator.vibrate(15); touchClick(touch.v.x, touch.v.y, 2); } }, 450);
+}, { passive: false });
+screen.addEventListener('touchmove', (e) => {
+  if (!touch) return;
+  e.preventDefault();
+  const t = [...e.changedTouches].find((q) => q.identifier === touch.id);
+  if (!t) return;
+  if (Math.hypot(t.clientX - touch.x0, t.clientY - touch.y0) > 12) { touch.moved = true; clearTimeout(touch.timer); }
+  const v = toVector(t.clientX, t.clientY);
+  if (v && v.inside && touch.moved) { touch.v = v; vmouse(v.x, v.y, 0, 0, 1); }
+}, { passive: false });
+function touchEnd(e) {
+  startAudio();   // iOS включает звук только из touchend
+  if (!touch) return;
+  e.preventDefault();
+  clearTimeout(touch.timer);
+  if (!touch.moved && !touch.long) touchClick(touch.v.x, touch.v.y, 1);
+  touch = null;
+}
+screen.addEventListener('touchend', touchEnd, { passive: false });
+screen.addEventListener('touchcancel', (e) => { if (touch) { clearTimeout(touch.timer); touch = null; } }, { passive: false });
 
 // ---- набор с клавиатуры Вектора (запуск игры из CO) ----
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -250,7 +297,10 @@ $('reset').onclick = () => { if (running) { vreset(0); screen.focus(); } };
 const box = document.querySelector('.case');
 $('full').onclick = async () => {
   if (document.fullscreenElement || document.webkitFullscreenElement) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
-  await (box.requestFullscreen || box.webkitRequestFullscreen).call(box);
+  const req = box.requestFullscreen || box.webkitRequestFullscreen;
+  // iPhone полноэкранный режим даёт только видео — там корпус растягивается на всё окно
+  if (!req) { box.classList.toggle('pseudo-full'); screen.focus(); return; }
+  try { await req.call(box); } catch (e) { box.classList.toggle('pseudo-full'); return; }
   try { await navigator.keyboard.lock(['Escape']); } catch (e) { /* Safari, Firefox: Esc выходит из полного экрана — есть кнопка АР2 */ }
   screen.focus();
 };
@@ -285,7 +335,8 @@ $('recdl').onclick = async (e) => {
 };
 for (const a of document.querySelectorAll('a.issue')) a.href += '?body=' + encodeURIComponent('Сборка: ' + BUILD + '\nБраузер: ' + navigator.userAgent + '\n\nЧто случилось:\n\nКак повторить:\n');
 
-addEventListener('error', (e) => hit('js-error', { msg: String(e.message).slice(0, 300) }));
+addEventListener('error', (e) => hit('js-error', { msg: String(e.message).slice(0, 300), at: (e.filename || '?').split('/').pop() + ':' + e.lineno + ':' + e.colno, stack: e.error && String(e.error.stack).slice(0, 600) }));
+addEventListener('unhandledrejection', (e) => hit('js-reject', { msg: String(e.reason && (e.reason.stack || e.reason)).slice(0, 600) }));
 boot().then(() => tel('start', { w: innerWidth, h: innerHeight })).catch((e) => { say('Ошибка: ' + e.message); console.error(e); tel('boot-fail', { msg: e.message }); flush(false); });
 window.gobRec = rec;
 window.gobDebug = () => ({ sent, starve, events: rec.events.length, frames, queued, audioAlive, audio: actx && actx.state, running, paused });
