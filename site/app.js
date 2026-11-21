@@ -170,16 +170,21 @@ const vq = [], vpool = [];
 function later(at) {
   const e = vpool.pop() || { img: ctx.createImageData(W, H) };
   e.at = at; e.img.data.set(pix); vq.push(e);
-  while (vq.length > 16) show(vq.shift());
+  while (vq.length > 40) show(vq.shift());
 }
 function show(e) { ctx.putImageData(e.img, 0, 0); vpool.push(e); }
 function showDue() {
   const lat = (actx.outputLatency || 0.02) + (actx.baseLatency || 0);
-  const heard = played + (performance.now() - playedAt) * RATE / 1000 - lat * RATE;
+  const heard = played + (performance.now() - playedAt) * RATE / 1000 - (lat + avShift / 1000) * RATE;
   let e = null;
   while (vq.length && vq[0].at <= heard) { if (e) vpool.push(e); e = vq.shift(); }
   if (e) show(e);
 }
+// ползунок «картинка позже звука»: подбор на слух, если браузер занижает задержку вывода (Chrome на маке, 21.11.2026)
+let avShift = 0;
+try { avShift = +(localStorage.getItem('gob-avshift') || 0); } catch (x) {}
+$('avs').value = avShift; $('avsv').textContent = avShift;
+$('avs').oninput = (e) => { avShift = +e.target.value; $('avsv').textContent = avShift; try { localStorage.setItem('gob-avshift', avShift); } catch (x) {} };
 function flushLater() { while (vq.length) show(vq.shift()); }
 
 let last = 0, acc = 0, perfF = 0, perfT = 0, starve = 0, starve0 = 0, drawn = 0;
