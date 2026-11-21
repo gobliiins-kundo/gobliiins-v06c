@@ -135,6 +135,7 @@ EMSCRIPTEN_KEEPALIVE int v_pc() { return i8080cpu::i8080_pc(); }
 EMSCRIPTEN_KEEPALIVE int v_sp() { return i8080cpu::i8080_regs_sp(); }
 EMSCRIPTEN_KEEPALIVE int v_iff() { return i8080cpu::i8080_iff() ? 1 : 0; }
 EMSCRIPTEN_KEEPALIVE int v_peek(int addr) { return memory.read(addr & 0xffff, false); }
+EMSCRIPTEN_KEEPALIVE void v_poke(int addr, int v) { memory.write(addr & 0xffff, v & 0xff, false); }
 EMSCRIPTEN_KEEPALIVE int v_frame_no() { return board.get_frame_no(); }
 EMSCRIPTEN_KEEPALIVE int v_ruslat() { return ruslat ? 1 : 0; }
 
