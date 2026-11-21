@@ -119,7 +119,23 @@ class Ring extends AudioWorkletProcessor {
 }
 registerProcessor('ring', Ring);`;
 
+// iOS (и Chrome на iPhone — тот же WebKit) глушит Web Audio беззвучным переключателем, а медиа — нет.
+// Сессия «воспроизведение» (iOS 17+) и беззвучный <audio> в петле переводят звук в режим медиа
+let unlockEl = null;
+function iosUnlock() {
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+  if (unlockEl) return;
+  // 0,1 с тишины, WAV 8 кГц 8 бит
+  const n = 800, b = new Uint8Array(44 + n), d = new DataView(b.buffer);
+  const w = (o, s) => [...s].forEach((c, i) => b[o + i] = c.charCodeAt(0));
+  w(0, 'RIFF'); d.setUint32(4, 36 + n, true); w(8, 'WAVEfmt '); d.setUint32(16, 16, true); d.setUint16(20, 1, true); d.setUint16(22, 1, true);
+  d.setUint32(24, 8000, true); d.setUint32(28, 8000, true); d.setUint16(32, 1, true); d.setUint16(34, 8, true); w(36, 'data'); d.setUint32(40, n, true); b.fill(128, 44);
+  unlockEl = new Audio(URL.createObjectURL(new Blob([b], { type: 'audio/wav' })));
+  unlockEl.loop = true; unlockEl.setAttribute('playsinline', '');
+  unlockEl.play().catch(() => { unlockEl = null; });
+}
 async function startAudio() {
+  iosUnlock();
   if (actx) { if (actx.state !== 'running') await actx.resume(); return; }
   actx = new AudioContext({ sampleRate: RATE, latencyHint: 'interactive' });
   const url = URL.createObjectURL(new Blob([WORKLET], { type: 'application/javascript' }));
@@ -156,7 +172,7 @@ function pump() {
 setInterval(() => {
   if (!running || paused) return;
   const now = performance.now();
-  if (perfT) tel('perf', { fps: Math.round((frames - perfF) * 10000 / (now - perfT)) / 10, starve: starve - starve0, audio: actx ? actx.state : 'off', hidden: document.hidden });
+  if (perfT) tel('perf', { fps: Math.round((frames - perfF) * 10000 / (now - perfT)) / 10, starve: starve - starve0, audio: actx ? actx.state : 'off', media: unlockEl ? !unlockEl.paused : null, sess: navigator.audioSession ? navigator.audioSession.type : null, hidden: document.hidden });
   perfF = frames; perfT = now; starve0 = starve;
 }, 60000);
 function loop(t) {
